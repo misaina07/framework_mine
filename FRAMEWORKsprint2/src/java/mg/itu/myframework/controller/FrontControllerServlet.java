@@ -7,6 +7,7 @@ import jakarta.servlet.http.*;
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.exception.UrlNotFoundException;
 import mg.itu.myframework.listener.FrameworkListener;
+import mg.itu.myframework.mvc.ModelAndView;
 import mg.itu.myframework.util.MethodClassMapping;
 
 @Controller
@@ -30,20 +31,16 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     private void process(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        res.setContentType("text/html");
-        PrintWriter out = res.getWriter();
         String url = processRequest(req, res);
-        out.println("URL : " + url + "<br><br>");
 
         try {
-            invoke(url, out);
+            invoke(req, res, url);
         } catch (UrlNotFoundException e) {
+            res.setContentType("text/html");
+            PrintWriter out = res.getWriter();
+            out.println("URL : " + url + "<br><br>");
             out.println(e.getMessage());
-        }
-
-        out.println("<br><br>Liste des classes contrôleurs : <br>");
-        for (String controller : listController) {
-            out.println("- " + controller + "<br>");
+            printControllerList(out);
         }
     }
 
@@ -59,7 +56,7 @@ public class FrontControllerServlet extends HttpServlet {
 
     }
 
-    private void invoke(String url, PrintWriter out) throws UrlNotFoundException, ServletException {
+    private void invoke(HttpServletRequest req, HttpServletResponse res, String url) throws UrlNotFoundException, ServletException, IOException {
         MethodClassMapping mapping = listUrlMapping.get(url);
 
         if (mapping == null) {
@@ -69,13 +66,33 @@ public class FrontControllerServlet extends HttpServlet {
         try {
             Object controllerInstance = mapping.getClasse().getDeclaredConstructor().newInstance();
             Object result = mapping.getMethode().invoke(controllerInstance);
-            out.println("Classe : " + mapping.getClasse().getName() + "<br>");
-            out.println("Méthode : " + mapping.getMethode().getName() + "<br><br>");
-            if (result != null) {
-                out.println(result.toString());
+
+            if (result instanceof ModelAndView) {
+                ModelAndView modelAndView = (ModelAndView) result;
+                for (Map.Entry<String, Object> entry : modelAndView.getData().entrySet()) {
+                    req.setAttribute(entry.getKey(), entry.getValue());
+                }
+                req.getRequestDispatcher(modelAndView.getView()).forward(req, res);
+            } else {
+                res.setContentType("text/html");
+                PrintWriter out = res.getWriter();
+                out.println("URL : " + url + "<br><br>");
+                out.println("Classe : " + mapping.getClasse().getName() + "<br>");
+                out.println("Méthode : " + mapping.getMethode().getName() + "<br><br>");
+                if (result != null) {
+                    out.println(result.toString());
+                }
+                printControllerList(out);
             }
         } catch (ReflectiveOperationException e) {
             throw new ServletException("Impossible d'invoquer " + mapping.getClasse().getName() + "." + mapping.getMethode().getName(), e);
+        }
+    }
+
+    private void printControllerList(PrintWriter out) {
+        out.println("<br><br>Liste des classes contrôleurs : <br>");
+        for (String controller : listController) {
+            out.println("- " + controller + "<br>");
         }
     }
 

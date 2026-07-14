@@ -1,0 +1,59 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: tomcat-servlet-api
+Bundle-SymbolicName: org.apache.tomcat-servlet-api
+Bundle-Version: 10.0.16
+Export-Package: jakarta.servlet;version="5.0";uses:="jakarta.servlet.a
+ nnotation,jakarta.servlet.descriptor",jakarta.servlet.annotation;vers
+ ion="5.0";uses:="jakarta.servlet",jakarta.servlet.descriptor;version=
+ "5.0",jakarta.servlet.http;version="5.0";uses:="jakarta.servlet",jaka
+ rta.servlet.resources;version="5.0"
+Import-Package: jakarta.servlet;version="[5.0,6)",jakarta.servlet.anno
+ tation;version="[5.0,6)",jakarta.servlet.descriptor;version="[5.0,6)"
+Provide-Capability: osgi.contract;osgi.contract=JavaServlet;version:Ve
+ rsion="5.0";uses:="jakarta.servlet,jakarta.servlet.annotation,jakarta
+ .servlet.descriptor,jakarta.servlet.http,jakarta.servlet.resources"
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"
+X-Compile-Source-JDK: ${compile.source}
+X-Compile-Target-JDK: ${compile.target}
+
+Name: jakarta/servlet/
+Implementation-Title: jakarta.servlet
+Implementation-Vendor: Apache Software Foundation
+Implementation-Version: 5.0.0
+Specification-Title: Jakarta Servlet
+Specification-Vendor: Eclipse Foundation
+Specification-Version: 5.0
+
+Name: jakarta/servlet/annotation/
+Implementation-Title: jakarta.servlet
+Implementation-Vendor: Apache Software Foundation
+Implementation-Version: 5.0.0
+Specification-Title: Jakarta Servlet
+Specification-Vendor: Eclipse Foundation
+Specification-Version: 5.0
+
+Name: jakarta/servlet/descriptor/
+Implementation-Title: jakarta.servlet
+Implementation-Vendor: Apache Software Foundation
+Implementation-Version: 5.0.0
+Specification-Title: Jakarta Servlet
+Specification-Vendor: Eclipse Foundation
+Specification-Version: 5.0
+
+Name: jakarta/servlet/http/
+Implementation-Title: jakarta.servlet
+Implementation-Vendor: Apache Software Foundation
+Implementation-Version: 5.0.0
+Specification-Title: Jakarta Servlet
+Specification-Vendor: Eclipse Foundation
+Specification-Version: 5.0
+
+Name: jakarta/servlet/resources/
+Implementation-Title: jakarta.servlet
+Implementation-Vendor: Apache Software Foundation
+Implementation-Version: 5.0.0
+Specification-Title: Jakarta Servlet
+Specification-Vendor: Eclipse Foundation
+Specification-Version: 5.0
+

@@ -6,25 +6,19 @@ import java.util.*;
 import jakarta.servlet.http.*;
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.exception.UrlNotFoundException;
-import mg.itu.myframework.util.ClassUtil;
+import mg.itu.myframework.listener.FrameworkListener;
 import mg.itu.myframework.util.MethodClassMapping;
 
 @Controller
 public class FrontControllerServlet extends HttpServlet {
-    private List<String> listController = new ArrayList<>();
-    private Map<String, MethodClassMapping> listUrlMapping = new HashMap<>();
+    private List<String> listController;
+    private Map<String, MethodClassMapping> listUrlMapping;
 
     // init
+    @SuppressWarnings("unchecked")
     public void init() throws ServletException {
-        List<String> packageNames = new ArrayList<>();
-        packageNames.add("mg.itu.myframework.controller");
-        packageNames.add("controller");
-
-        List<Class<?>> controllers = ClassUtil.getClassesWithAnnotation(packageNames, listUrlMapping, Controller.class);
-        for (Class<?> controller : controllers) {
-            listController.add(controller.getName());
-        }
-
+        listUrlMapping = (Map<String, MethodClassMapping>) getServletContext().getAttribute(FrameworkListener.ATTR_URL_MAPPING);
+        listController = (List<String>) getServletContext().getAttribute(FrameworkListener.ATTR_CONTROLLERS);
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {

@@ -5,16 +5,14 @@ import jakarta.servlet.*;
 import java.util.*;
 import jakarta.servlet.http.*;
 import mg.itu.myframework.annotation.Controller;
-import mg.itu.myframework.annotation.HttpMethod;
 import mg.itu.myframework.exception.UrlNotFoundException;
 import mg.itu.myframework.util.ClassUtil;
 import mg.itu.myframework.util.MethodClassMapping;
-import mg.itu.myframework.util.UrlMappingKey;
 
 @Controller
 public class FrontControllerServlet extends HttpServlet {
     private List<String> listController = new ArrayList<>();
-    private Map<UrlMappingKey, MethodClassMapping> listUrlMapping = new HashMap<>();
+    private Map<String, MethodClassMapping> listUrlMapping = new HashMap<>();
 
     // init
     public void init() throws ServletException {
@@ -30,21 +28,21 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        process(req, res, HttpMethod.GET);
+        process(req, res);
     }
 
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        process(req, res, HttpMethod.POST);
+        process(req, res);
     }
 
-    private void process(HttpServletRequest req, HttpServletResponse res, HttpMethod httpMethod) throws ServletException, IOException {
+    private void process(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         res.setContentType("text/html");
         PrintWriter out = res.getWriter();
         String url = processRequest(req, res);
-        out.println("URL : " + url + " [" + httpMethod + "]<br><br>");
+        out.println("URL : " + url + "<br><br>");
 
         try {
-            invoke(url, httpMethod, out);
+            invoke(url, out);
         } catch (UrlNotFoundException e) {
             out.println(e.getMessage());
         }
@@ -67,12 +65,11 @@ public class FrontControllerServlet extends HttpServlet {
 
     }
 
-    private void invoke(String url, HttpMethod httpMethod, PrintWriter out) throws UrlNotFoundException, ServletException {
-        UrlMappingKey key = new UrlMappingKey(url, httpMethod);
-        MethodClassMapping mapping = listUrlMapping.get(key);
+    private void invoke(String url, PrintWriter out) throws UrlNotFoundException, ServletException {
+        MethodClassMapping mapping = listUrlMapping.get(url);
 
         if (mapping == null) {
-            throw new UrlNotFoundException(buildUrlNotFoundMessage(url, httpMethod));
+            throw new UrlNotFoundException(buildUrlNotFoundMessage(url));
         }
 
         try {
@@ -88,20 +85,18 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
-    private String buildUrlNotFoundMessage(String url, HttpMethod httpMethod) {
+    private String buildUrlNotFoundMessage(String url) {
         StringBuilder message = new StringBuilder();
-        message.append("L'URL '").append(url).append("' n'est pas accessible en ").append(httpMethod)
-               .append(", voici la liste des URL accessibles : <br>");
+        message.append("L'URL '").append(url).append("' n'est pas accessible, voici la liste des URL accessibles : <br>");
         message.append("<table border='1'>");
-        message.append("<tr><th>URL</th><th>Méthode HTTP</th><th>Classe</th><th>Méthode</th></tr>");
+        message.append("<tr><th>URL</th><th>Classe</th><th>Méthode</th></tr>");
         if (listUrlMapping.isEmpty()) {
-            message.append("<tr><td colspan=\"4\">Aucune URL n'a été trouvée</td></tr>");
+            message.append("<tr><td colspan=\"3\">Aucune URL n'a été trouvée</td></tr>");
         } else {
-            for (Map.Entry<UrlMappingKey, MethodClassMapping> entry : listUrlMapping.entrySet()) {
-                UrlMappingKey k = entry.getKey();
+            for (Map.Entry<String, MethodClassMapping> entry : listUrlMapping.entrySet()) {
+                String u = entry.getKey();
                 MethodClassMapping m = entry.getValue();
-                message.append("<tr><td>").append(k.getUrl()).append("</td><td>")
-                       .append(k.getMethod()).append("</td><td>")
+                message.append("<tr><td>").append(u).append("</td><td>")
                        .append(m.getClasse().getName()).append("</td><td>")
                        .append(m.getMethode().getName()).append("</td></tr>");
             }

@@ -14,7 +14,7 @@ import java.lang.annotation.Annotation;
 
 public class ClassUtil {
 
-    public static List<Class<?>> getClassesWithAnnotation(List<String> packageNames, Map<UrlMappingKey, MethodClassMapping> urlMappings, Class<? extends Annotation> annotation) {
+    public static List<Class<?>> getClassesWithAnnotation(List<String> packageNames, Map<String, MethodClassMapping> urlMappings, Class<? extends Annotation> annotation) {
         List<Class<?>> classes = new ArrayList<>();
         for (String packageName : packageNames) {
             classes.addAll(getClasses(packageName));
@@ -26,9 +26,9 @@ public class ClassUtil {
                 for (Method method : clazz.getDeclaredMethods()) {
                     if (method.isAnnotationPresent(UrlMapping.class)) {
                         UrlMapping urlMapping = method.getAnnotation(UrlMapping.class);
-                        UrlMappingKey key = new UrlMappingKey(urlMapping.url(), urlMapping.method());
+                        String url = urlMapping.url();
                         MethodClassMapping mapping = new MethodClassMapping(clazz, method);
-                        urlMappings.put(key, mapping);
+                        urlMappings.put(url, mapping);
                     }
                 }
             }

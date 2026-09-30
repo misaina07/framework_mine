@@ -4,7 +4,9 @@ import java.io.*;
 import jakarta.servlet.*;
 import java.util.*;
 import jakarta.servlet.http.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import mg.itu.myframework.annotation.Controller;
+import mg.itu.myframework.annotation.WebApi;
 import mg.itu.myframework.exception.UrlNotFoundException;
 import mg.itu.myframework.listener.FrameworkListener;
 import mg.itu.myframework.mvc.ModelAndView;
@@ -45,14 +47,8 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     private String processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        String url = req.getRequestURL().toString();
-        String[] urlParts = url.split("/");
-        String path = "";
-        for (int i = 4 ; i < urlParts.length; i++) {
-            path += "/" + urlParts[i];
-        }
-
-        return path;
+        String path = req.getRequestURI().substring(req.getContextPath().length());
+        return path.isEmpty() ? "/" : path;
 
     }
 
@@ -67,7 +63,18 @@ public class FrontControllerServlet extends HttpServlet {
             Object controllerInstance = mapping.getClasse().getDeclaredConstructor().newInstance();
             Object result = mapping.getMethode().invoke(controllerInstance);
 
-            if (result instanceof ModelAndView) {
+            if (mapping.getMethode().isAnnotationPresent(WebApi.class)) {
+                res.setContentType("application/json");
+                res.setCharacterEncoding("UTF-8");
+
+                PrintWriter jsonWriter = res.getWriter();
+                if (result instanceof String) {
+                    jsonWriter.println((String) result);
+                } else {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    jsonWriter.println(objectMapper.writeValueAsString(result));
+                }
+            } else if (result instanceof ModelAndView) {
                 ModelAndView modelAndView = (ModelAndView) result;
                 for (Map.Entry<String, Object> entry : modelAndView.getData().entrySet()) {
                     req.setAttribute(entry.getKey(), entry.getValue());

@@ -69,7 +69,7 @@ for %%j in ("%LIB%\*.jar") do (
         echo Extraction de %%~nxj
 
         REM Ignorer servlet-api.jar si souhaite
-        REM if /i not "%%~nxj"=="servlet-api.jar" (
+        REM if /i not "%%~nxj"=="servlet-api.jar" (lsl
 
         pushd "%CLASSES_DIR%"
         jar xf "%%~fj"
@@ -79,6 +79,14 @@ for %%j in ("%LIB%\*.jar") do (
 
     )
 )
+
+echo.
+echo ===================================
+echo Preparation de l'application web...
+echo ===================================
+
+mkdir "%OUT_DIR%\WEB-INF\classes" 2>nul
+xcopy "%CLASSES_DIR%\*" "%OUT_DIR%\WEB-INF\classes\" /E /I /Y /Q >nul
 
 echo.
 echo ===================================

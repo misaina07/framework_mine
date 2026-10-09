@@ -40,14 +40,14 @@ public final class ParameterBinder {
             throws ParameterBindingException {
         try {
             if (type == String.class) return value;
-            if (type == int.class || type == Integer.class) return Integer.valueOf(value);
-            if (type == long.class || type == Long.class) return Long.valueOf(value);
-            if (type == double.class || type == Double.class) return Double.valueOf(value);
-            if (type == float.class || type == Float.class) return Float.valueOf(value);
-            if (type == short.class || type == Short.class) return Short.valueOf(value);
-            if (type == byte.class || type == Byte.class) return Byte.valueOf(value);
-            if (type == boolean.class || type == Boolean.class) return Boolean.valueOf(value);
-            if (type == char.class || type == Character.class) {
+            if (type == int.class       ||  type == Integer.class) return Integer.valueOf(value);
+            if (type == long.class      ||  type == Long.class) return Long.valueOf(value);
+            if (type == double.class    ||  type == Double.class) return Double.valueOf(value);
+            if (type == float.class     ||  type == Float.class) return Float.valueOf(value);
+            if (type == short.class     ||  type == Short.class) return Short.valueOf(value);
+            if (type == byte.class      ||  type == Byte.class) return Byte.valueOf(value);
+            if (type == boolean.class   ||  type == Boolean.class) return Boolean.valueOf(value);
+            if (type == char.class      ||  type == Character.class) {
                 if (value.length() == 1) return value.charAt(0);
                 throw new IllegalArgumentException("un seul caractère attendu");
             }

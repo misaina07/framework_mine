@@ -29,16 +29,13 @@ echo ===================================
 echo Compilation Java...
 echo ===================================
 
-subst B: "%CD%" >nul 2>&1
+dir /s /b "%SRC_DIR%\*.java" > "%TEMP%\sources.txt"
 
-dir /s /b "B:\%SRC_DIR%\*.java" > "%TEMP%\sources.txt"
-
-javac -cp "B:\%LIB%\*" -d "B:\%CLASSES_DIR%" @"%TEMP%\sources.txt"
+javac -cp "%LIB%\*" -d "%CLASSES_DIR%" @"%TEMP%\sources.txt"
 
 set "RESULT=%ERRORLEVEL%"
 
 del "%TEMP%\sources.txt" 2>nul
-subst B: /d >nul 2>&1
 
 if %RESULT% neq 0 (
     echo.

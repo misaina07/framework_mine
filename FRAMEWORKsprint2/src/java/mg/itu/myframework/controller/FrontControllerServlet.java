@@ -1,27 +1,62 @@
 package mg.itu.myframework.controller;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import jakarta.servlet.*;
 import java.util.*;
 import jakarta.servlet.http.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mg.itu.myframework.annotation.Controller;
+import mg.itu.myframework.annotation.RequestMapping;
 import mg.itu.myframework.annotation.WebApi;
 import mg.itu.myframework.exception.UrlNotFoundException;
-import mg.itu.myframework.listener.FrameworkListener;
+import mg.itu.myframework.model.Mapping;
 import mg.itu.myframework.mvc.ModelAndView;
-import mg.itu.myframework.util.MethodClassMapping;
+import mg.itu.myframework.util.PackageScanner;
 
-@Controller
 public class FrontControllerServlet extends HttpServlet {
-    private List<String> listController;
-    private Map<String, MethodClassMapping> listUrlMapping;
+    private final List<String> listController = new ArrayList<>();
+    private final Map<String, Mapping> listUrlMapping = new HashMap<>();
 
-    // init
-    @SuppressWarnings("unchecked")
+    @Override
     public void init() throws ServletException {
-        listUrlMapping = (Map<String, MethodClassMapping>) getServletContext().getAttribute(FrameworkListener.ATTR_URL_MAPPING);
-        listController = (List<String>) getServletContext().getAttribute(FrameworkListener.ATTR_CONTROLLERS);
+        String packages = getServletContext().getInitParameter("packageNames");
+        if (packages == null || packages.trim().isEmpty()) {
+            packages = "controller";
+        }
+
+        try {
+            for (String packageName : packages.split("[,;]")) {
+                for (Class<?> clazz : PackageScanner.scan(packageName.trim())) {
+                    if (!clazz.isAnnotationPresent(Controller.class)) {
+                        continue;
+                    }
+
+                    Object controller = clazz.getDeclaredConstructor().newInstance();
+                    listController.add(clazz.getName());
+                    for (Method method : clazz.getDeclaredMethods()) {
+                        String url = getMappedUrl(method);
+                        if (url != null && listUrlMapping.put(url, new Mapping(controller, method)) != null) {
+                            throw new ServletException("URL dupliquée : " + url);
+                        }
+                    }
+                }
+            }
+        } catch (ServletException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServletException("Impossible d'initialiser le conteneur", e);
+        }
+    }
+
+    private String getMappedUrl(Method method) {
+        RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+        if (requestMapping != null) {
+            return requestMapping.value();
+        }
+        mg.itu.myframework.annotation.UrlMapping urlMapping =
+                method.getAnnotation(mg.itu.myframework.annotation.UrlMapping.class);
+        return urlMapping == null ? null : urlMapping.url();
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
@@ -53,17 +88,16 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     private void invoke(HttpServletRequest req, HttpServletResponse res, String url) throws UrlNotFoundException, ServletException, IOException {
-        MethodClassMapping mapping = listUrlMapping.get(url);
+        Mapping mapping = listUrlMapping.get(url);
 
         if (mapping == null) {
             throw new UrlNotFoundException(buildUrlNotFoundMessage(url));
         }
 
         try {
-            Object controllerInstance = mapping.getClasse().getDeclaredConstructor().newInstance();
-            Object result = mapping.getMethode().invoke(controllerInstance);
+            Object result = mapping.getMethod().invoke(mapping.getController());
 
-            if (mapping.getMethode().isAnnotationPresent(WebApi.class)) {
+            if (mapping.getMethod().isAnnotationPresent(WebApi.class)) {
                 res.setContentType("application/json");
                 res.setCharacterEncoding("UTF-8");
 
@@ -84,15 +118,15 @@ public class FrontControllerServlet extends HttpServlet {
                 res.setContentType("text/html");
                 PrintWriter out = res.getWriter();
                 out.println("URL : " + url + "<br><br>");
-                out.println("Classe : " + mapping.getClasse().getName() + "<br>");
-                out.println("Méthode : " + mapping.getMethode().getName() + "<br><br>");
+                out.println("Classe : " + mapping.getController().getClass().getName() + "<br>");
+                out.println("Méthode : " + mapping.getMethod().getName() + "<br><br>");
                 if (result != null) {
                     out.println(result.toString());
                 }
                 printControllerList(out);
             }
         } catch (ReflectiveOperationException e) {
-            throw new ServletException("Impossible d'invoquer " + mapping.getClasse().getName() + "." + mapping.getMethode().getName(), e);
+            throw new ServletException("Impossible d'invoquer " + mapping.getController().getClass().getName() + "." + mapping.getMethod().getName(), e);
         }
     }
 
@@ -111,12 +145,12 @@ public class FrontControllerServlet extends HttpServlet {
         if (listUrlMapping.isEmpty()) {
             message.append("<tr><td colspan=\"3\">Aucune URL n'a été trouvée</td></tr>");
         } else {
-            for (Map.Entry<String, MethodClassMapping> entry : listUrlMapping.entrySet()) {
+            for (Map.Entry<String, Mapping> entry : listUrlMapping.entrySet()) {
                 String u = entry.getKey();
-                MethodClassMapping m = entry.getValue();
-                message.append("<tr><td>").append(u).append("</td><td>")
-                       .append(m.getClasse().getName()).append("</td><td>")
-                       .append(m.getMethode().getName()).append("</td></tr>");
+                Mapping m = entry.getValue();
+                  message.append("<tr><td>").append(u).append("</td><td>")
+                      .append(m.getController().getClass().getName()).append("</td><td>")
+                      .append(m.getMethod().getName()).append("</td></tr>");
             }
         }
         message.append("</table>");

@@ -3,6 +3,7 @@ package controller;
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.annotation.UrlMapping;
 import mg.itu.myframework.annotation.WebApi;
+import mg.itu.myframework.mvc.ModelAndView;
 
 import java.util.Arrays;
 import java.util.List;
@@ -11,8 +12,13 @@ import java.util.List;
 public class EmpController {
 
     @UrlMapping(url = "/emp/new")
-    public String create() {
-        return "Formulaire de création d'un employé";
+    public ModelAndView create() {
+        return new ModelAndView("/formulaire.jsp");
+    }
+
+    @UrlMapping(url = "/emp/save")
+    public String save(String nom, int age) {
+        return "Employe enregistre : " + nom + " (" + age + " ans)";
     }
 
     @WebApi

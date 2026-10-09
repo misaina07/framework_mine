@@ -29,16 +29,26 @@ echo ===================================
 echo Compilation Java...
 echo ===================================
 
-subst B: "%CD%" >nul 2>&1
+set "BUILD_JAVA_HOME=%JAVA_HOME%"
+if exist "C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin\javac.exe" (
+    set "BUILD_JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot"
+)
 
-dir /s /b "B:\%SRC_DIR%\*.java" > "%TEMP%\sources.txt"
+if not exist "%BUILD_JAVA_HOME%\bin\javac.exe" (
+    echo ERREUR : aucun JDK compatible n'a ete trouve.
+    echo JAVA_HOME actuel : %JAVA_HOME%
+    popd
+    pause
+    exit /b 1
+)
 
-javac -cp "B:\%LIB%\*" -d "B:\%CLASSES_DIR%" @"%TEMP%\sources.txt"
+dir /s /b "%SRC_DIR%\*.java" > "%TEMP%\sources.txt"
+
+"%BUILD_JAVA_HOME%\bin\javac.exe" -parameters --release 17 -cp "%LIB%\*" -d "%CLASSES_DIR%" @"%TEMP%\sources.txt"
 
 set "RESULT=%ERRORLEVEL%"
 
 del "%TEMP%\sources.txt" 2>nul
-subst B: /d >nul 2>&1
 
 if %RESULT% neq 0 (
     echo.

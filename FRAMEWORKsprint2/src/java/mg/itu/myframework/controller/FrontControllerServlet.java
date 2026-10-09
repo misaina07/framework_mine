@@ -8,9 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.annotation.WebApi;
 import mg.itu.myframework.exception.UrlNotFoundException;
+import mg.itu.myframework.exception.ParameterBindingException;
 import mg.itu.myframework.listener.FrameworkListener;
 import mg.itu.myframework.mvc.ModelAndView;
 import mg.itu.myframework.util.MethodClassMapping;
+import mg.itu.myframework.util.ParameterBinder;
 
 @Controller
 public class FrontControllerServlet extends HttpServlet {
@@ -43,6 +45,8 @@ public class FrontControllerServlet extends HttpServlet {
             out.println("URL : " + url + "<br><br>");
             out.println(e.getMessage());
             printControllerList(out);
+        } catch (ParameterBindingException e) {
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -61,7 +65,8 @@ public class FrontControllerServlet extends HttpServlet {
 
         try {
             Object controllerInstance = mapping.getClasse().getDeclaredConstructor().newInstance();
-            Object result = mapping.getMethode().invoke(controllerInstance);
+            Object[] arguments = ParameterBinder.bind(mapping.getMethode(), req, res);
+            Object result = mapping.getMethode().invoke(controllerInstance, arguments);
 
             if (mapping.getMethode().isAnnotationPresent(WebApi.class)) {
                 res.setContentType("application/json");

@@ -9,10 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.annotation.RequestMapping;
 import mg.itu.myframework.annotation.WebApi;
+import mg.itu.myframework.exception.ParameterBindingException;
 import mg.itu.myframework.exception.UrlNotFoundException;
 import mg.itu.myframework.model.Mapping;
 import mg.itu.myframework.mvc.ModelAndView;
 import mg.itu.myframework.util.PackageScanner;
+import mg.itu.myframework.util.ParameterBinder;
 
 public class FrontControllerServlet extends HttpServlet {
     private final List<String> listController = new ArrayList<>();
@@ -78,6 +80,8 @@ public class FrontControllerServlet extends HttpServlet {
             out.println("URL : " + url + "<br><br>");
             out.println(e.getMessage());
             printControllerList(out);
+        } catch (ParameterBindingException e) {
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -87,7 +91,7 @@ public class FrontControllerServlet extends HttpServlet {
 
     }
 
-    private void invoke(HttpServletRequest req, HttpServletResponse res, String url) throws UrlNotFoundException, ServletException, IOException {
+    private void invoke(HttpServletRequest req, HttpServletResponse res, String url) throws UrlNotFoundException, ServletException, IOException, ParameterBindingException {
         Mapping mapping = listUrlMapping.get(url);
 
         if (mapping == null) {
@@ -95,7 +99,8 @@ public class FrontControllerServlet extends HttpServlet {
         }
 
         try {
-            Object result = mapping.getMethod().invoke(mapping.getController());
+            Object[] arguments = ParameterBinder.bind(mapping.getMethod(), req, res);
+            Object result = mapping.getMethod().invoke(mapping.getController(), arguments);
 
             if (mapping.getMethod().isAnnotationPresent(WebApi.class)) {
                 res.setContentType("application/json");

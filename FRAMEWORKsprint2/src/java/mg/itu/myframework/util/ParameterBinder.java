@@ -6,6 +6,10 @@ import mg.itu.myframework.exception.ParameterBindingException;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 
 public final class ParameterBinder {
     private ParameterBinder() {
@@ -23,6 +27,8 @@ public final class ParameterBinder {
                 arguments[index] = request;
             } else if (HttpServletResponse.class.isAssignableFrom(type)) {
                 arguments[index] = response;
+            } else if (!isSimpleType(type)) {
+                arguments[index] = bindObject(type, request);
             } else {
                 String value = request.getParameter(parameter.getName());
                 if (value == null) {
@@ -32,6 +38,52 @@ public final class ParameterBinder {
             }
         }
         return arguments;
+    }
+
+    private static boolean isSimpleType(Class<?> type) {
+        return type == String.class
+                || type.isPrimitive()
+                || type.isEnum()
+                || type == Integer.class
+                || type == Long.class
+                || type == Double.class
+                || type == Float.class
+                || type == Short.class
+                || type == Byte.class
+                || type == Boolean.class
+                || type == Character.class;
+    }
+
+    private static Object bindObject(Class<?> type, HttpServletRequest request)
+            throws ParameterBindingException {
+        try {
+            Object bean = type.getDeclaredConstructor().newInstance();
+            BeanInfo beanInfo = Introspector.getBeanInfo(type, Object.class);
+            boolean hasWritableProperty = false;
+
+            for (PropertyDescriptor property : beanInfo.getPropertyDescriptors()) {
+                if (property.getWriteMethod() == null) {
+                    continue;
+                }
+                hasWritableProperty = true;
+                String propertyName = property.getName();
+                String value = request.getParameter(propertyName);
+                if (value == null) {
+                    throw new ParameterBindingException("Parametre HTTP manquant : " + propertyName);
+                }
+                Object convertedValue = convert(value, property.getPropertyType(), propertyName);
+                property.getWriteMethod().invoke(bean, convertedValue);
+            }
+
+            if (!hasWritableProperty) {
+                throw new ParameterBindingException("Aucune propriete modifiable pour : " + type.getName());
+            }
+            return bean;
+        } catch (ParameterBindingException e) {
+            throw e;
+        } catch (IntrospectionException | ReflectiveOperationException e) {
+            throw new ParameterBindingException("Impossible de construire : " + type.getName(), e);
+        }
     }
 
     @SuppressWarnings("unchecked")

@@ -36,7 +36,6 @@ if exist "C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin\javac.exe"
 
 if not exist "%BUILD_JAVA_HOME%\bin\javac.exe" (
     echo ERREUR : aucun JDK compatible n'a ete trouve.
-    echo JAVA_HOME actuel : %JAVA_HOME%
     popd
     pause
     exit /b 1

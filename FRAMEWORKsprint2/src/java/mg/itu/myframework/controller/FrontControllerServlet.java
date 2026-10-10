@@ -2,6 +2,7 @@ package mg.itu.myframework.controller;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import jakarta.servlet.*;
 import java.util.*;
 import jakarta.servlet.http.*;
@@ -22,6 +23,9 @@ public class FrontControllerServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
+        listController.clear();
+        listUrlMapping.clear();
+
         String packages = getServletContext().getInitParameter("packageNames");
         if (packages == null || packages.trim().isEmpty()) {
             packages = "controller";
@@ -29,7 +33,11 @@ public class FrontControllerServlet extends HttpServlet {
 
         try {
             for (String packageName : packages.split("[,;]")) {
-                for (Class<?> clazz : PackageScanner.scan(packageName.trim())) {
+                String trimmedPackageName = packageName.trim();
+                if (trimmedPackageName.isEmpty()) {
+                    continue;
+                }
+                for (Class<?> clazz : PackageScanner.scan(trimmedPackageName)) {
                     if (!clazz.isAnnotationPresent(Controller.class)) {
                         continue;
                     }
@@ -91,7 +99,7 @@ public class FrontControllerServlet extends HttpServlet {
 
     }
 
-    private void invoke(HttpServletRequest req, HttpServletResponse res, String url) throws UrlNotFoundException, ServletException, IOException, ParameterBindingException {
+    private void invoke(HttpServletRequest req, HttpServletResponse res, String url) throws UrlNotFoundException, ServletException, IOException {
         Mapping mapping = listUrlMapping.get(url);
 
         if (mapping == null) {
@@ -130,6 +138,10 @@ public class FrontControllerServlet extends HttpServlet {
                 }
                 printControllerList(out);
             }
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            throw new ServletException("Erreur dans " + mapping.getController().getClass().getName()
+                    + "." + mapping.getMethod().getName(), cause);
         } catch (ReflectiveOperationException e) {
             throw new ServletException("Impossible d'invoquer " + mapping.getController().getClass().getName() + "." + mapping.getMethod().getName(), e);
         }

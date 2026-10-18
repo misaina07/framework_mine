@@ -4,6 +4,8 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.annotation.WebServlet;
 import java.util.*;
 import jakarta.servlet.http.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +19,13 @@ import mg.itu.myframework.mvc.ModelAndView;
 import mg.itu.myframework.util.PackageScanner;
 import mg.itu.myframework.util.ParameterBinder;
 
+
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024 * 2,
+    maxFileSize = 1024 * 1024 * 10,
+    maxRequestSize = 1024 * 1024 * 10 * 5
+)
+@WebServlet(name = "FrontControllerServlet", urlPatterns = {"/"}, loadOnStartup = 1)
 public class FrontControllerServlet extends HttpServlet {
     private final List<String> listController = new ArrayList<>();
     private final Map<String, Mapping> listUrlMapping = new HashMap<>();
@@ -69,12 +78,16 @@ public class FrontControllerServlet extends HttpServlet {
         return urlMapping == null ? null : urlMapping.url();
     }
 
-    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        process(req, res);
-    }
+    @Override
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+                process(request, response);
+            }
 
-    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        process(req, res);
+    @Override
+    public void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        process(request, response);
     }
 
     private void process(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {

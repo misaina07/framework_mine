@@ -3,6 +3,8 @@ package mg.itu.myframework.util;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.myframework.exception.ParameterBindingException;
+import mg.itu.myframework.model.MapFILE;
+import java.lang.reflect.Field;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -10,9 +12,56 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.IOException;
+import jakarta.servlet.http.Part;
 
 public final class ParameterBinder {
     private ParameterBinder() {
+    }
+
+    /**
+     * Extrait un fichier d'une requête multipart et retourne une instance de MapFILE.
+     */
+
+    public static MapFILE bindFile(HttpServletRequest request, String paramName) throws ParameterBindingException {
+        if (!isMultipart(request)) {
+            throw new ParameterBindingException("La requete doit etre multipart/form-data");
+        }
+        try {
+            Part filePart = request.getPart(paramName);
+            if (filePart == null || filePart.getSize() == 0) {
+                throw new ParameterBindingException("Fichier manquant pour le parametre : " + paramName);
+            }
+
+            String fileName = filePart.getSubmittedFileName();
+            if (fileName == null || fileName.isBlank()) {
+                throw new ParameterBindingException("Nom de fichier manquant pour le parametre : " + paramName);
+            }
+            String contentType = filePart.getContentType();
+            byte[] fileBytes;
+            try (java.io.InputStream inputStream = filePart.getInputStream()) {
+                fileBytes = inputStream.readAllBytes();
+            }
+
+            return new MapFILE(fileName, contentType, fileBytes);
+        } catch (ParameterBindingException e) {
+            throw e;
+        } catch (IOException | jakarta.servlet.ServletException e) {
+            throw new ParameterBindingException("Erreur lors de la liaison du fichier pour le parametre : " + paramName, e);
+        } catch (Exception e) {
+            throw new ParameterBindingException("Erreur lors de la liaison du fichier pour le parametre : " + paramName, e);
+        }
+    }
+
+    public static MapFILE extractMapFile(HttpServletRequest request, String paramName) {
+        try {
+            if (isMultipart(request)) {
+                return bindFile(request, paramName);
+            }
+        } catch (Exception e) {
+            // Ignore the exception and return null
+        }
+        return null;
     }
 
     public static Object[] bind(Method method, HttpServletRequest request, HttpServletResponse response)
@@ -23,7 +72,9 @@ public final class ParameterBinder {
         for (int index = 0; index < parameters.length; index++) {
             Parameter parameter = parameters[index];
             Class<?> type = parameter.getType();
-            if (HttpServletRequest.class.isAssignableFrom(type)) {
+            if (type == MapFILE.class) {
+                arguments[index] = bindFile(request, parameter.getName());
+            } else if (HttpServletRequest.class.isAssignableFrom(type)) {
                 arguments[index] = request;
             } else if (HttpServletResponse.class.isAssignableFrom(type)) {
                 arguments[index] = response;
@@ -67,6 +118,13 @@ public final class ParameterBinder {
                 }
                 hasWritableProperty = true;
                 String propertyName = property.getName();
+                if (property.getPropertyType() == MapFILE.class) {
+                    MapFILE mapFile = extractMapFile(request, propertyName);
+                    if (mapFile != null) {
+                        property.getWriteMethod().invoke(bean, mapFile);
+                    }
+                    continue;
+                }
                 String value = request.getParameter(propertyName);
                 if (value == null) {
                     throw new ParameterBindingException("Parametre HTTP manquant : " + propertyName);
@@ -84,6 +142,12 @@ public final class ParameterBinder {
         } catch (IntrospectionException | ReflectiveOperationException e) {
             throw new ParameterBindingException("Impossible de construire : " + type.getName(), e);
         }
+    }
+
+    private static boolean isMultipart(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase(java.util.Locale.ROOT)
+                .startsWith("multipart/form-data");
     }
 
     @SuppressWarnings("unchecked")

@@ -8,12 +8,4 @@
         <param-name>packageNames</param-name>
         <param-value>controller</param-value>
     </context-param>
-    <servlet>
-        <servlet-name>frontController</servlet-name>
-        <servlet-class>mg.itu.myframework.controller.FrontControllerServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>frontController</servlet-name>
-        <url-pattern>/</url-pattern>
-    </servlet-mapping>
 </web-app>

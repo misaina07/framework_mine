@@ -4,6 +4,7 @@ import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.annotation.UrlMapping;
 import mg.itu.myframework.mvc.ModelAndView;
 import model.Employe;
+import mg.itu.myframework.model.MapFILE;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +28,10 @@ public class EmployeController {
 
     @UrlMapping(url = "/emp/save-object")
     public String enregistrer(Employe employe) {
+        MapFILE fichier = employe.getRectoCIN();
         return "Employe enregistre : " + employe.getNom()
-                + " (" + employe.getAge() + " ans, " + employe.getEmail() + ")";
+            + " (" + employe.getAge() + " ans, " + employe.getEmail() + ")"
+            + (fichier == null ? " - aucun fichier" : " - fichier : " + fichier.getNom_du_fichier()
+            + " (" + fichier.getBytes().length + " octets)");
     }
 }

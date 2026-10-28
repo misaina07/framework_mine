@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.myframework.exception.ParameterBindingException;
 import mg.itu.myframework.model.MapFILE;
+import mg.itu.myframework.model.MapSession;
 import java.lang.reflect.Field;
 
 import java.lang.reflect.Method;
@@ -72,7 +73,9 @@ public final class ParameterBinder {
         for (int index = 0; index < parameters.length; index++) {
             Parameter parameter = parameters[index];
             Class<?> type = parameter.getType();
-            if (type == MapFILE.class) {
+            if (type == MapSession.class) {
+                arguments[index] = SessionUtil.getMapSessionContext(request);
+            } else if (type == MapFILE.class) {
                 arguments[index] = bindFile(request, parameter.getName());
             } else if (HttpServletRequest.class.isAssignableFrom(type)) {
                 arguments[index] = request;

@@ -13,6 +13,8 @@ set "OUT_DIR=out"
 set "CLASSES_DIR=%OUT_DIR%\classes"
 set "LIB_DIR=%OUT_DIR%\lib"
 set "LIB=lib"
+set "TOMCAT_WEBAPPS=C:\Program Files\Apache Software Foundation\Tomcat 10.1\webapps"
+set "TOMCAT_APP=%TOMCAT_WEBAPPS%\%APP_NAME%"
 
 echo.
 echo ===================================
@@ -115,6 +117,29 @@ echo.
 echo JAR cree :
 echo %LIB_DIR%\%APP_NAME%.jar
 
+echo.
+echo ===================================
+echo Deploiement vers Tomcat...
+echo ===================================
+
+if not exist "%TOMCAT_WEBAPPS%" (
+    echo AVERTISSEMENT : Tomcat introuvable, deploiement ignore.
+    goto build_ok
+)
+
+if exist "%TOMCAT_APP%" rmdir /s /q "%TOMCAT_APP%"
+mkdir "%TOMCAT_APP%"
+
+xcopy "%OUT_DIR%\WEB-INF" "%TOMCAT_APP%\WEB-INF" /E /I /Y /Q >nul
+
+REM Copier les JSP racine s'il y en a
+for %%f in ("%OUT_DIR%\*.jsp") do (
+    copy /Y "%%f" "%TOMCAT_APP%\" >nul
+)
+
+echo Deploye dans : %TOMCAT_APP%
+
+:build_ok
 echo.
 echo ===================================
 echo BUILD TERMINE

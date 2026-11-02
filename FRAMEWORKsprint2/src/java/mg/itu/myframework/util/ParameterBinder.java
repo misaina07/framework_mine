@@ -74,7 +74,7 @@ public final class ParameterBinder {
             Parameter parameter = parameters[index];
             Class<?> type = parameter.getType();
             if (type == MapSession.class) {
-                arguments[index] = SessionUtil.getMapSessionContext(request);
+                arguments[index] = SessionUtil.setMapSession(request, SessionUtil.getMapSessionContext(request));
             } else if (type == MapFILE.class) {
                 arguments[index] = bindFile(request, parameter.getName());
             } else if (HttpServletRequest.class.isAssignableFrom(type)) {

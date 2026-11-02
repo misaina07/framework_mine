@@ -12,4 +12,8 @@
         <param-name>sessionAuth</param-name>
         <param-value>user</param-value>
     </context-param>
+    <context-param>
+        <param-name>roleAuth</param-name>
+        <param-value>role</param-value>
+    </context-param>
 </web-app>

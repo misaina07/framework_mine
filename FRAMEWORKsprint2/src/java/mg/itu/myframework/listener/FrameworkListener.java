@@ -17,9 +17,13 @@ public class FrameworkListener implements ServletContextListener {
 
     public static final String ATTR_URL_MAPPING = "listUrlMapping";
     public static final String ATTR_CONTROLLERS = "listController";
+    public static final String ATTR_ROLE_AUTH = "roleAuth";
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        String roleAuth = sce.getServletContext().getInitParameter("roleAuth");
+        sce.getServletContext().setAttribute(ATTR_ROLE_AUTH, roleAuth);
+
         List<String> packageNames = new ArrayList<>();
         packageNames.add("mg.itu.myframework.controller");
         packageNames.add("controller");

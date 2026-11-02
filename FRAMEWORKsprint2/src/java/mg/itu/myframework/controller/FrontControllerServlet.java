@@ -9,15 +9,19 @@ import jakarta.servlet.annotation.WebServlet;
 import java.util.*;
 import jakarta.servlet.http.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mg.itu.myframework.annotation.Auth;
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.annotation.RequestMapping;
 import mg.itu.myframework.annotation.WebApi;
 import mg.itu.myframework.exception.ParameterBindingException;
 import mg.itu.myframework.exception.UrlNotFoundException;
 import mg.itu.myframework.model.Mapping;
+import mg.itu.myframework.model.MapSession;
 import mg.itu.myframework.mvc.ModelAndView;
 import mg.itu.myframework.util.PackageScanner;
 import mg.itu.myframework.util.ParameterBinder;
+import mg.itu.myframework.util.AuthUtil;
+import mg.itu.myframework.util.SessionUtil;
 
 
 @MultipartConfig(
@@ -29,11 +33,13 @@ import mg.itu.myframework.util.ParameterBinder;
 public class FrontControllerServlet extends HttpServlet {
     private final List<String> listController = new ArrayList<>();
     private final Map<String, Mapping> listUrlMapping = new HashMap<>();
+    private String roleAuthKey;
 
     @Override
     public void init() throws ServletException {
         listController.clear();
         listUrlMapping.clear();
+        roleAuthKey = (String) getServletContext().getAttribute("roleAuth");
 
         String packages = getServletContext().getInitParameter("packageNames");
         if (packages == null || packages.trim().isEmpty()) {
@@ -96,11 +102,7 @@ public class FrontControllerServlet extends HttpServlet {
         try {
             invoke(req, res, url);
         } catch (UrlNotFoundException e) {
-            res.setContentType("text/html");
-            PrintWriter out = res.getWriter();
-            out.println("URL : " + url + "<br><br>");
-            out.println(e.getMessage());
-            printControllerList(out);
+            res.sendError(HttpServletResponse.SC_NOT_FOUND, "URL introuvable : " + url);
         } catch (ParameterBindingException e) {
             res.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         }
@@ -120,6 +122,26 @@ public class FrontControllerServlet extends HttpServlet {
         }
 
         try {
+            Auth auth = mapping.getMethod().getAnnotation(Auth.class);
+            if (auth != null) {
+                MapSession session = SessionUtil.getMapSessionContext(req);
+                String authKey = getServletContext().getInitParameter("sessionAuth");
+                Object sessionAuth = session == null || authKey == null
+                    ? null : session.get(authKey);
+                Object roleAuth = session == null || roleAuthKey == null
+                    ? null : session.get(roleAuthKey);
+
+                if (sessionAuth == null) {
+                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                            "Cette methode exige une authentification");
+                    return;
+                }
+                if (!AuthUtil.verifyRoleAccess(roleAuth, auth.role())) {
+                    res.sendError(HttpServletResponse.SC_FORBIDDEN,
+                            "Vous n'avez pas le role requis pour acceder a cette methode.");
+                    return;
+                }
+            }
             Object[] arguments = ParameterBinder.bind(mapping.getMethod(), req, res);
             Object result = mapping.getMethod().invoke(mapping.getController(), arguments);
 

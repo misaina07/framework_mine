@@ -11,10 +11,13 @@ mkdir "out\test-classes"
 set "JAVAC=%JAVA_HOME%\bin\javac.exe"
 if exist "C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin\javac.exe" set "JAVAC=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin\javac.exe"
 
-"%JAVAC%" --release 17 -parameters -cp "lib\*;out\classes" -d "out\test-classes" src\test\java\Sprint8MultipartTest.java
+"%JAVAC%" --release 17 -parameters -cp "lib\*;out\classes" -d "out\test-classes" src\test\java\Sprint8MultipartTest.java src\test\java\Sprint10AuthTest.java
 if errorlevel 1 exit /b 1
 
 "%JAVAC:javac.exe=java.exe%" -cp "lib\*;out\classes;out\test-classes" Sprint8MultipartTest
+if errorlevel 1 exit /b 1
+
+"%JAVAC:javac.exe=java.exe%" -cp "lib\*;out\classes;out\test-classes" Sprint10AuthTest
 set "RESULT=%ERRORLEVEL%"
 popd
 exit /b %RESULT%

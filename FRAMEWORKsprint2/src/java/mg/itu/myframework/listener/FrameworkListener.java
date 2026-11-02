@@ -20,6 +20,9 @@ public class FrameworkListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        String sessionAuth = sce.getServletContext().getInitParameter("sessionAuth");
+        sce.getServletContext().setAttribute("sessionAuth", sessionAuth);
+
         List<String> packageNames = new ArrayList<>();
         packageNames.add("mg.itu.myframework.controller");
         packageNames.add("controller");

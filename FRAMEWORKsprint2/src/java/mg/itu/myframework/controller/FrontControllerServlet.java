@@ -10,6 +10,7 @@ import java.util.*;
 import jakarta.servlet.http.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mg.itu.myframework.annotation.Controller;
+import mg.itu.myframework.annotation.Auth;
 import mg.itu.myframework.annotation.RequestMapping;
 import mg.itu.myframework.annotation.WebApi;
 import mg.itu.myframework.exception.ParameterBindingException;
@@ -18,6 +19,7 @@ import mg.itu.myframework.model.Mapping;
 import mg.itu.myframework.mvc.ModelAndView;
 import mg.itu.myframework.util.PackageScanner;
 import mg.itu.myframework.util.ParameterBinder;
+import mg.itu.myframework.util.SessionUtil;
 
 
 @MultipartConfig(
@@ -120,8 +122,22 @@ public class FrontControllerServlet extends HttpServlet {
         }
 
         try {
+            if (mapping.getMethod().isAnnotationPresent(Auth.class) && !isAuthenticated(req)) {
+                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                res.setContentType("text/html");
+                res.getWriter().println("Acces refuse : authentification requise.");
+                return;
+            }
             Object[] arguments = ParameterBinder.bind(mapping.getMethod(), req, res);
             Object result = mapping.getMethod().invoke(mapping.getController(), arguments);
+            if (SessionUtil.verifyMapSessionObject(req, arguments)) {
+                for (Object argument : arguments) {
+                    if (argument instanceof mg.itu.myframework.model.MapSession) {
+                        SessionUtil.rectifySession(req, (mg.itu.myframework.model.MapSession) argument);
+                        break;
+                    }
+                }
+            }
 
             if (mapping.getMethod().isAnnotationPresent(WebApi.class)) {
                 res.setContentType("application/json");
@@ -158,6 +174,17 @@ public class FrontControllerServlet extends HttpServlet {
         } catch (ReflectiveOperationException e) {
             throw new ServletException("Impossible d'invoquer " + mapping.getController().getClass().getName() + "." + mapping.getMethod().getName(), e);
         }
+    }
+
+    private boolean isAuthenticated(HttpServletRequest request) {
+        String sessionAuth = getServletContext().getAttribute("sessionAuth") instanceof String
+                ? (String) getServletContext().getAttribute("sessionAuth") : null;
+        if (sessionAuth == null || sessionAuth.trim().isEmpty()) {
+            return false;
+        }
+        mg.itu.myframework.model.MapSession mapSession =
+                SessionUtil.setMapSession(request, SessionUtil.getMapSessionContext(request));
+        return mapSession.get(sessionAuth) != null;
     }
 
     private void printControllerList(PrintWriter out) {
